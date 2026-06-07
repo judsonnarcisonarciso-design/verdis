@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verdis — Floresta que Rende</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --forest: #0a1a0f;
+    --deep: #060e09;
+    --bark: #1a2e1d;
+    --moss: #2d4a32;
+    --gold: #c9a84c;
+    --gold-light: #e2c06a;
+    --sage: #7a9e7e;
+    --cream: #f0ebe0;
+    --cream-dim: #c8c0b0;
+    --white: #ffffff;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--deep);
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* CUSTOM CURSOR */
+  .cursor {
+    position: fixed;
+    width: 8px; height: 8px;
+    background: var(--gold);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s ease;
+  }
+  .cursor-ring {
+    position: fixed;
+    width: 32px; height: 32px;
+    border: 1px solid rgba(201,168,76,0.4);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: all 0.15s ease;
+  }
+
+  /* NOISE TEXTURE */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 28px 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(to bottom, rgba(6,14,9,0.95), transparent);
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--cream);
+    text-transform: uppercase;
+  }
+
+  .logo span {
+    color: var(--gold);
+  }
+
+  nav ul {
+    list-style: none;
+    display: flex;
+    gap: 40px;
+  }
+
+  nav ul a {
+    color: var(--cream-dim);
+    text-decoration: none;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 400;
+    transition: color 0.3s;
+  }
+
+  nav ul a:hover { color: var(--gold); }
+
+  .nav-cta {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold) !important;
+    padding: 10px 24px;
+    font-size: 12px !important;
+    letter-spacing: 0.15em !important;
+    transition: all 0.3s !important;
+  }
+
+  .nav-cta:hover {
+    background: var(--gold) !important;
+    color: var(--deep) !important;
+  }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    position: relative;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 80% at 70% 50%, rgba(45,74,50,0.25) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 20% 80%, rgba(201,168,76,0.06) 0%, transparent 60%),
+      linear-gradient(160deg, var(--deep) 0%, var(--forest) 50%, #0d1f11 100%);
+  }
+
+  /* FOREST LINES DECORATION */
+  .forest-lines {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 55%;
+    height: 100%;
+    overflow: hidden;
+    opacity: 0.12;
+  }
+
+  .forest-lines svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    padding: 0 60px;
+    max-width: 780px;
+  }
+
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.2s forwards;
+  }
+
+  .hero-tag-line {
+    width: 32px;
+    height: 1px;
+    background: var(--gold);
+  }
+
+  .hero-tag span {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 500;
+    font-family: 'DM Mono', monospace;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(52px, 7vw, 88px);
+    font-weight: 900;
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+    color: var(--cream);
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.4s forwards;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .hero-sub {
+    font-size: 18px;
+    line-height: 1.7;
+    color: var(--cream-dim);
+    max-width: 520px;
+    margin-bottom: 56px;
+    font-weight: 300;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.6s forwards;
+  }
+
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.8s forwards;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--gold);
+    color: var(--deep);
+    padding: 16px 36px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all 0.3s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .btn-primary:hover {
+    background: var(--gold-light);
+    transform: translateY(-2px);
+  }
+
+  .btn-primary svg { transition: transform 0.3s; }
+  .btn-primary:hover svg { transform: translateX(4px); }
+
+  .btn-link {
+    color: var(--cream-dim);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(200,192,176,0.3);
+    padding-bottom: 2px;
+    transition: all 0.3s;
+  }
+
+  .btn-link:hover {
+    color: var(--cream);
+    border-color: var(--cream-dim);
+  }
+
+  /* HERO STATS */
+  .hero-stats {
+    position: absolute;
+    bottom: 60px;
+    right: 60px;
+    display: flex;
+    gap: 48px;
+    z-index: 2;
+    opacity: 0;
+    animation: fadeUp 0.8s 1s forwards;
+  }
+
+  .stat {
+    text-align: right;
+  }
+
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1;
+    display: block;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    margin-top: 6px;
+    display: block;
+  }
+
+  .stat-divider {
+    width: 1px;
+    background: rgba(255,255,255,0.1);
+    align-self: stretch;
+  }
+
+  /* SCROLL INDICATOR */
+  .scroll-ind {
+    position: absolute;
+    bottom: 60px;
+    left: 60px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 2;
+    opacity: 0;
+    animation: fadeUp 0.8s 1.2s forwards;
+  }
+
+  .scroll-line {
+    width: 1px;
+    height: 48px;
+    background: linear-gradient(to bottom, var(--gold), transparent);
+    animation: scrollPulse 2s infinite;
+  }
+
+  .scroll-text {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    writing-mode: vertical-rl;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* PROBLEM SECTION */
+  .section {
+    position: relative;
+    z-index: 2;
+    padding: 120px 60px;
+  }
+
+  .section-tag {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 64px;
+  }
+
+  .section-tag-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--gold);
+    letter-spacing: 0.15em;
+  }
+
+  .section-tag-line {
+    flex: 1;
+    max-width: 48px;
+    height: 1px;
+    background: var(--gold);
+    opacity: 0.5;
+  }
+
+  .section-tag-text {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    font-family: 'DM Mono', monospace;
+  }
+
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(36px, 4vw, 56px);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--cream);
+    margin-bottom: 48px;
+  }
+
+  h2 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  /* PROBLEM GRID */
+  .problem-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2px;
+    margin-top: 80px;
+  }
+
+  .problem-card {
+    background: var(--bark);
+    padding: 48px 40px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.4s;
+  }
+
+  .problem-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+    background: var(--gold);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s;
+  }
+
+  .problem-card:hover::before { transform: scaleX(1); }
+  .problem-card:hover { background: #1f3523; }
+
+  .problem-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 64px;
+    font-weight: 900;
+    color: rgba(201,168,76,0.12);
+    line-height: 1;
+    margin-bottom: 24px;
+    display: block;
+  }
+
+  .problem-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: 16px;
+    line-height: 1.3;
+  }
+
+  .problem-body {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--cream-dim);
+  }
+
+  /* SOLUTION SECTION */
+  .solution-section {
+    background: var(--forest);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .solution-section::before {
+    content: '';
+    position: absolute;
+    top: -200px; right: -200px;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .layers {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 80px;
+  }
+
+  .layer {
+    display: grid;
+    grid-template-columns: 80px 1fr 1fr;
+    gap: 0;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: all 0.4s;
+    cursor: default;
+  }
+
+  .layer:hover {
+    background: rgba(201,168,76,0.04);
+    border-color: rgba(201,168,76,0.2);
+  }
+
+  .layer-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--gold);
+    border-right: 1px solid rgba(255,255,255,0.05);
+    padding: 40px 0;
+  }
+
+  .layer-content {
+    padding: 40px 48px;
+    border-right: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .layer-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: 12px;
+  }
+
+  .layer-desc {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--cream-dim);
+  }
+
+  .layer-output {
+    padding: 40px 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .layer-output-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .layer-output-value {
+    font-size: 15px;
+    color: var(--sage);
+    line-height: 1.6;
+  }
+
+  /* HOW SECTION */
+  .how-section {
+    background: var(--deep);
+  }
+
+  .how-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    margin-top: 80px;
+  }
+
+  .how-step {
+    padding: 48px 40px;
+    background: rgba(255,255,255,0.02);
+    position: relative;
+  }
+
+  .how-step-icon {
+    width: 48px; height: 48px;
+    border: 1px solid rgba(201,168,76,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 28px;
+    color: var(--gold);
+  }
+
+  .how-step-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: 12px;
+  }
+
+  .how-step-body {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--cream-dim);
+  }
+
+  .how-connector {
+    position: absolute;
+    top: 68px;
+    right: -1px;
+    width: 3px;
+    height: 3px;
+    background: var(--gold);
+    border-radius: 50%;
+  }
+
+  /* MARKET SECTION */
+  .market-section {
+    background: var(--bark);
+  }
+
+  .market-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+    margin-top: 80px;
+  }
+
+  .market-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+  }
+
+  .mstat {
+    background: rgba(255,255,255,0.03);
+    padding: 40px 32px;
+    border-top: 2px solid var(--gold);
+  }
+
+  .mstat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px;
+    font-weight: 900;
+    color: var(--gold);
+    line-height: 1;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .mstat-label {
+    font-size: 13px;
+    color: var(--cream-dim);
+    line-height: 1.5;
+  }
+
+  .market-text h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: 24px;
+    line-height: 1.3;
+  }
+
+  .market-text p {
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--cream-dim);
+    margin-bottom: 20px;
+  }
+
+  .market-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 32px;
+  }
+
+  .market-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    font-size: 14px;
+    color: var(--cream-dim);
+    line-height: 1.5;
+  }
+
+  .market-list li::before {
+    content: '';
+    width: 20px;
+    height: 1px;
+    background: var(--gold);
+    margin-top: 10px;
+    flex-shrink: 0;
+  }
+
+  /* CTA SECTION */
+  .cta-section {
+    background: var(--deep);
+    text-align: center;
+    padding: 140px 60px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-section::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 800px; height: 400px;
+    background: radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .cta-section h2 {
+    max-width: 640px;
+    margin: 0 auto 48px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cta-section p {
+    font-size: 16px;
+    color: var(--cream-dim);
+    max-width: 480px;
+    margin: 0 auto 56px;
+    line-height: 1.7;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cta-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 32px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .deadline-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(201,168,76,0.1);
+    border: 1px solid rgba(201,168,76,0.3);
+    padding: 10px 20px;
+    margin-bottom: 56px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .deadline-dot {
+    width: 6px; height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  .deadline-text {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* FOOTER */
+  footer {
+    background: var(--forest);
+    padding: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .footer-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--cream);
+  }
+
+  .footer-logo span { color: var(--gold); }
+
+  .footer-tagline {
+    font-size: 13px;
+    color: var(--cream-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .footer-right {
+    font-size: 12px;
+    color: var(--cream-dim);
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.05em;
+    line-height: 1.8;
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.4); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (max-width: 900px) {
+    nav { padding: 24px 30px; }
+    nav ul { display: none; }
+    .hero-content { padding: 0 30px; }
+    .hero-stats { right: 30px; bottom: 40px; gap: 24px; }
+    .stat-num { font-size: 24px; }
+    .section { padding: 80px 30px; }
+    .problem-grid { grid-template-columns: 1fr; }
+    .how-grid { grid-template-columns: 1fr; }
+    .market-grid { grid-template-columns: 1fr; gap: 48px; }
+    .layer { grid-template-columns: 60px 1fr; }
+    .layer-output { display: none; }
+    footer { flex-direction: column; gap: 24px; text-align: center; }
+    .footer-right { text-align: center; }
+    .scroll-ind { display: none; }
+    body { cursor: auto; }
+    .cursor, .cursor-ring { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Ver<span>dis</span></div>
+  <ul>
+    <li><a href="#problema">Problema</a></li>
+    <li><a href="#solucao">Solução</a></li>
+    <li><a href="#mercado">Mercado</a></li>
+    <li><a href="#candidatura" class="nav-cta">Candidatura</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="forest-lines">
+    <svg viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="treeGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#7a9e7e" stop-opacity="0.6"/>
+          <stop offset="100%" stop-color="#7a9e7e" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <!-- Tree silhouettes -->
+      <g fill="url(#treeGrad)">
+        <polygon points="80,600 120,200 160,600"/>
+        <polygon points="60,600 110,280 160,600"/>
+        <polygon points="200,600 250,150 300,600"/>
+        <polygon points="180,600 240,240 300,600"/>
+        <polygon points="340,600 380,180 420,600"/>
+        <polygon points="320,600 370,260 420,600"/>
+        <polygon points="460,600 510,210 560,600"/>
+        <polygon points="440,600 500,300 560,600"/>
+        <rect x="112" y="560" width="16" height="40"/>
+        <rect x="242" y="560" width="16" height="40"/>
+        <rect x="372" y="560" width="16" height="40"/>
+        <rect x="502" y="560" width="16" height="40"/>
+      </g>
+      <!-- Satellite signal rings -->
+      <g fill="none" stroke="#c9a84c" stroke-opacity="0.15">
+        <circle cx="300" cy="100" r="40" stroke-dasharray="4,8"/>
+        <circle cx="300" cy="100" r="80" stroke-dasharray="4,8"/>
+        <circle cx="300" cy="100" r="120" stroke-dasharray="4,8"/>
+        <circle cx="300" cy="100" r="3" fill="#c9a84c" fill-opacity="0.4"/>
+      </g>
+      <!-- Data connection lines -->
+      <g stroke="#c9a84c" stroke-opacity="0.08" stroke-width="0.5">
+        <line x1="300" y1="103" x2="120" y2="390"/>
+        <line x1="300" y1="103" x2="250" y2="370"/>
+        <line x1="300" y1="103" x2="380" y2="360"/>
+        <line x1="300" y1="103" x2="510" y2="400"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="hero-content">
+    <div class="hero-tag">
+      <div class="hero-tag-line"></div>
+      <span>Plataforma Florestal &amp; Carbono</span>
+    </div>
+    <h1>A floresta que<br>tens <em>já rende.</em></h1>
+    <p class="hero-sub">Gestão florestal, monitorização satelital e créditos de carbono numa única plataforma — para baldios e proprietários privados em Portugal.</p>
+    <div class="hero-actions">
+      <a href="#candidatura" class="btn-primary">
+        Candidatar-me
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </a>
+      <a href="#solucao" class="btn-link">Como funciona</a>
+    </div>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat">
+      <span class="stat-num">400k</span>
+      <span class="stat-label">Hectares de baldios</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <span class="stat-num">85%</span>
+      <span class="stat-label">Floresta privada em PT</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <span class="stat-num">€0</span>
+      <span class="stat-label">Créditos gerados até hoje</span>
+    </div>
+  </div>
+
+  <div class="scroll-ind">
+    <div class="scroll-line"></div>
+    <span class="scroll-text">Continuar</span>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="section" id="problema">
+  <div class="section-tag reveal">
+    <span class="section-tag-num">01</span>
+    <div class="section-tag-line"></div>
+    <span class="section-tag-text">O Problema</span>
+  </div>
+  <h2 class="reveal">A floresta portuguesa<br>não recebe o que <em>merece.</em></h2>
+  <div class="problem-grid">
+    <div class="problem-card reveal">
+      <span class="problem-num">01</span>
+      <div class="problem-title">Cadastro fragmentado</div>
+      <p class="problem-body">Apenas 7 municípios têm cadastro florestal georreferenciado completo. Os proprietários não conseguem provar o que têm — e por isso não acedem ao que lhes pertence.</p>
+    </div>
+    <div class="problem-card reveal" style="transition-delay: 0.1s">
+      <span class="problem-num">02</span>
+      <div class="problem-title">Financiamento perdido</div>
+      <p class="problem-body">Mais de €100M disponíveis em 2026 para floresta e clima. Grande parte não é esgotada — os proprietários privados não têm capacidade de candidatura nem de reporte.</p>
+    </div>
+    <div class="problem-card reveal" style="transition-delay: 0.2s">
+      <span class="problem-num">03</span>
+      <div class="problem-title">Carbono invisível</div>
+      <p class="problem-body">A floresta portuguesa fixa milhões de toneladas de CO₂ por ano. Nenhum proprietário privado recebe nada por isso — porque não existe infraestrutura para o fazer.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SOLUTION -->
+<section class="section solution-section" id="solucao">
+  <div class="section-tag reveal">
+    <span class="section-tag-num">02</span>
+    <div class="section-tag-line"></div>
+    <span class="section-tag-text">A Solução</span>
+  </div>
+  <h2 class="reveal">Três camadas.<br>Um só <em>produto.</em></h2>
+  <div class="layers">
+    <div class="layer reveal">
+      <div class="layer-num">I</div>
+      <div class="layer-content">
+        <div class="layer-title">Gestão e Compliance</div>
+        <p class="layer-desc">Registo da parcela via BUPi. Diagnóstico automático de elegibilidade para financiamentos PRR e PDR. Alertas de obrigações regulatórias e prazos ICNF.</p>
+      </div>
+      <div class="layer-output">
+        <div class="layer-output-label">Output imediato</div>
+        <div class="layer-output-value">Acesso a financiamento público que já existe mas não chegava ao proprietário</div>
+      </div>
+    </div>
+    <div class="layer reveal" style="transition-delay: 0.15s">
+      <div class="layer-num">II</div>
+      <div class="layer-content">
+        <div class="layer-title">Monitorização Satelital</div>
+        <p class="layer-desc">Dados Sentinel-2/Copernicus em tempo real. Deteção automática de anomalias — fogo, doença, corte ilegal. Cálculo contínuo de biomassa sem sensores no terreno.</p>
+      </div>
+      <div class="layer-output">
+        <div class="layer-output-label">Output contínuo</div>
+        <div class="layer-output-value">Estado real da floresta atualizado automaticamente — sem o proprietário fazer nada</div>
+      </div>
+    </div>
+    <div class="layer reveal" style="transition-delay: 0.3s">
+      <div class="layer-num">III</div>
+      <div class="layer-content">
+        <div class="layer-title">Créditos de Carbono</div>
+        <p class="layer-desc">Agregação automática de proprietários contíguos em blocos certificáveis. Certificação Verra/Gold Standard. Venda a empresas europeias com metas ESG e CSRD.</p>
+      </div>
+      <div class="layer-output">
+        <div class="layer-output-label">Output monetário</div>
+        <div class="layer-output-value">Rendimento passivo da floresta que já existe — o proprietário recebe, a Verdis retém comissão</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section how-section">
+  <div class="section-tag reveal">
+    <span class="section-tag-num">03</span>
+    <div class="section-tag-line"></div>
+    <span class="section-tag-text">Como Funciona</span>
+  </div>
+  <h2 class="reveal">Do registo ao<br>primeiro <em>pagamento.</em></h2>
+  <div class="how-grid">
+    <div class="how-step reveal">
+      <div class="how-step-icon">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <rect x="2" y="2" width="16" height="16" rx="1" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M6 10h8M10 6v8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="how-step-title">Registo em 10 minutos</div>
+      <p class="how-step-body">Introduz o número de artigo matricial ou faz upload da caderneta predial. A plataforma identifica a parcela e cruza com dados públicos automaticamente.</p>
+      <div class="how-connector"></div>
+    </div>
+    <div class="how-step reveal" style="transition-delay: 0.1s">
+      <div class="how-step-icon">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M10 2v2M10 16v2M2 10h2M16 10h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          <circle cx="10" cy="10" r="2" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="how-step-title">Satélite monitoriza</div>
+      <p class="how-step-body">Imagens Sentinel-2 atualizam o estado da parcela continuamente. Recebes alertas de anomalias e o cálculo de biomassa acumula-se ao longo do tempo.</p>
+      <div class="how-connector"></div>
+    </div>
+    <div class="how-step reveal" style="transition-delay: 0.2s">
+      <div class="how-step-icon">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M4 16l4-4 3 3 5-7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="16" cy="4" r="2" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+      </div>
+      <div class="how-step-title">Carbono certificado</div>
+      <p class="how-step-body">Com dados acumulados, a Verdis agrega a tua parcela com vizinhos contíguos, certifica os créditos e vende a empresas com obrigações ESG. Tu recebes.</p>
+    </div>
+  </div>
+</section>
+
+<!-- MARKET -->
+<section class="section market-section" id="mercado">
+  <div class="section-tag reveal">
+    <span class="section-tag-num">04</span>
+    <div class="section-tag-line"></div>
+    <span class="section-tag-text">O Mercado</span>
+  </div>
+  <div class="market-grid">
+    <div class="market-stats reveal">
+      <div class="mstat">
+        <span class="mstat-num">400</span>
+        <span class="mstat-label">Baldios em Portugal com personalidade jurídica própria</span>
+      </div>
+      <div class="mstat">
+        <span class="mstat-num">2,8M</span>
+        <span class="mstat-label">Hectares de floresta privada em Portugal</span>
+      </div>
+      <div class="mstat">
+        <span class="mstat-num">€50</span>
+        <span class="mstat-label">Preço por tonelada CO₂ no mercado voluntário europeu</span>
+      </div>
+      <div class="mstat">
+        <span class="mstat-num">€6,5B</span>
+        <span class="mstat-label">Investimento público previsto em floresta 2025–2050</span>
+      </div>
+    </div>
+    <div class="market-text reveal" style="transition-delay: 0.2s">
+      <h3>Portugal tem um dos maiores riscos de incêndio da Europa Ocidental — e nenhuma infraestrutura de dados para o combater.</h3>
+      <p>A Verdis não é apenas uma plataforma de negócio. É a infraestrutura que faltava para colocar a floresta privada portuguesa no mercado de carbono europeu — com impacto climático direto e mensurável.</p>
+      <ul class="market-list">
+        <li>Floresta bem gerida arde menos e fixa mais carbono</li>
+        <li>Cada hectare monitorizado é um ativo climático com valor real</li>
+        <li>Nenhum concorrente europeu opera em Portugal com este modelo</li>
+        <li>Procura por créditos de carbono europeus supera a oferta disponível</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="candidatura">
+  <div class="deadline-badge reveal">
+    <div class="deadline-dot"></div>
+    <span class="deadline-text">Candidaturas abertas — Deadline 8 de Junho de 2026</span>
+  </div>
+  <h2 class="reveal">A tua floresta já<br>está a trabalhar.<br><em>Falta receber.</em></h2>
+  <p class="reveal">Junta-te à Verdis. Sê dos primeiros proprietários e baldios a transformar a tua floresta num ativo climático com retorno real.</p>
+  <div class="cta-actions reveal">
+    <a href="https://santanderx.com" target="_blank" class="btn-primary">
+      Candidatar no Santander X
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="footer-logo">Ver<span>dis</span></div>
+    <div class="footer-tagline" style="margin-top: 8px">Floresta que rende. Clima que melhora.</div>
+  </div>
+  <div class="footer-right">
+    Portugal · 2026<br>
+    Prémio Fundação Santander | Católica-Lisbon<br>
+    <span style="color: var(--gold)">verdis.pt</span>
+  </div>
+</footer>
+
+<script>
+  // Cursor
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.left = mx + 'px';
+    cursor.style.top = my + 'px';
+  });
+
+  function animRing() {
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px';
+    ring.style.top = ry + 'px';
+    requestAnimationFrame(animRing);
+  }
+  animRing();
+
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      ring.style.width = '48px';
+      ring.style.height = '48px';
+      ring.style.borderColor = 'rgba(201,168,76,0.7)';
+    });
+    el.addEventListener('mouseleave', () => {
+      ring.style.width = '32px';
+      ring.style.height = '32px';
+      ring.style.borderColor = 'rgba(201,168,76,0.4)';
+    });
+  });
+
+  // Reveal on scroll
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), 0);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12 });
+
+  reveals.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
