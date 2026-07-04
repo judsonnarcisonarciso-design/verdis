@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verdis — Registe a sua Parcela Florestal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --deep:    #0b1a0d;
+  --forest:  #142a16;
+  --canopy:  #1f3d22;
+  --fern:    #2e5c32;
+  --moss:    #4a7c4e;
+  --sage:    #7aab7e;
+  --mist:    #b8d4ba;
+  --pollen:  #c8a84a;
+  --snow:    #f2f5f0;
+  --cream:   #faf9f5;
+  --ink:     #0d150e;
+  --mid:     #6b7a6c;
+  --light:   #a8b8a9;
+  --error:   #c0392b;
+  --success: #27ae60;
+}
+
+html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--cream); color: var(--ink); }
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  background: rgba(11,26,13,0.96);
+  backdrop-filter: blur(12px);
+  padding: 0 40px;
+  height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(122,171,126,0.12);
+}
+.nav-logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.4rem; color: var(--snow);
+  text-decoration: none; display: flex; align-items: center; gap: 8px;
+}
+.nav-logo-dot { color: var(--pollen); font-size: 1.8rem; line-height: 0; margin-top: 4px; }
+.nav-links { display: flex; gap: 32px; list-style: none; }
+.nav-links a {
+  font-size: 0.78rem; font-weight: 500; letter-spacing: 0.06em;
+  color: rgba(184,212,186,0.55); text-decoration: none; transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--mist); }
+.nav-cta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase;
+  background: var(--pollen); color: var(--ink);
+  border: none; padding: 9px 20px; cursor: pointer; transition: background 0.2s;
+  text-decoration: none;
+}
+.nav-cta:hover { background: #e8c870; }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  background: var(--deep);
+  display: grid; grid-template-columns: 1fr 1fr;
+  padding-top: 60px; position: relative; overflow: hidden;
+}
+.hero-left {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 80px 60px 80px 60px; position: relative; z-index: 2;
+}
+.hero-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--pollen); margin-bottom: 24px;
+  display: flex; align-items: center; gap: 12px;
+}
+.hero-eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--pollen); }
+.hero-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2.8rem, 4.5vw, 4.2rem);
+  line-height: 1.05; color: var(--snow); margin-bottom: 24px; font-weight: 400;
+}
+.hero-title em { font-style: italic; color: var(--pollen); }
+.hero-desc {
+  font-size: 0.95rem; font-weight: 300; line-height: 1.8;
+  color: rgba(184,212,186,0.65); max-width: 420px; margin-bottom: 40px;
+}
+.hero-stats {
+  display: flex; gap: 32px; margin-bottom: 40px;
+  padding-top: 32px; border-top: 1px solid rgba(122,171,126,0.12);
+}
+.hstat-val {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.8rem; color: var(--pollen); line-height: 1;
+}
+.hstat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.58rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgba(184,212,186,0.4); margin-top: 4px;
+}
+.hero-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase;
+  background: var(--pollen); color: var(--ink);
+  border: none; padding: 16px 36px; cursor: pointer;
+  transition: background 0.2s, transform 0.2s; display: inline-block;
+  text-decoration: none; align-self: flex-start;
+}
+.hero-btn:hover { background: #e8c870; transform: translateY(-2px); }
+
+/* Map in hero right */
+.hero-map {
+  position: relative; overflow: hidden;
+}
+.hero-map::before {
+  content: ''; position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(to right, var(--deep) 0%, transparent 15%);
+  pointer-events: none;
+}
+#heroMap { width: 100%; height: 100%; min-height: 500px; }
+
+/* ── HOW IT WORKS ── */
+.how {
+  padding: 100px 60px; background: var(--forest);
+}
+.how-inner { max-width: 1100px; margin: 0 auto; }
+.section-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--pollen); margin-bottom: 16px;
+}
+.section-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2rem, 3vw, 3rem); color: var(--snow);
+  font-weight: 400; margin-bottom: 56px; line-height: 1.1;
+}
+.section-title em { font-style: italic; color: var(--pollen); }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; background: rgba(122,171,126,0.06); }
+.step {
+  background: var(--forest); padding: 36px 28px;
+  border-bottom: 2px solid transparent; transition: border-color 0.3s, background 0.3s;
+}
+.step:hover { border-bottom-color: var(--pollen); background: rgba(46,92,50,0.2); }
+.step-n {
+  font-family: 'DM Serif Display', serif;
+  font-size: 3rem; color: rgba(200,168,74,0.15); line-height: 1; margin-bottom: 16px;
+}
+.step-icon { font-size: 1.6rem; margin-bottom: 14px; display: block; }
+.step-title { font-size: 0.9rem; font-weight: 600; color: var(--snow); margin-bottom: 10px; }
+.step-desc { font-size: 0.8rem; font-weight: 300; color: rgba(184,212,186,0.55); line-height: 1.7; }
+
+/* ── FORM SECTION ── */
+.form-section {
+  padding: 100px 60px; background: var(--cream);
+  display: grid; grid-template-columns: 1fr 1.4fr; gap: 80px;
+  max-width: 1200px; margin: 0 auto;
+}
+.form-intro { position: sticky; top: 80px; align-self: start; }
+.form-intro .section-title { color: var(--ink); }
+.form-intro .section-eyebrow { }
+.form-promise {
+  margin-top: 32px; display: flex; flex-direction: column; gap: 16px;
+}
+.promise-item {
+  display: flex; gap: 14px; align-items: flex-start;
+}
+.promise-icon {
+  width: 32px; height: 32px; background: rgba(46,92,50,0.1);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; flex-shrink: 0; margin-top: 2px;
+}
+.promise-text { font-size: 0.85rem; color: var(--mid); line-height: 1.6; }
+.promise-text strong { color: var(--ink); font-weight: 600; }
+
+/* Form */
+.form-card {
+  background: white;
+  border: 1px solid rgba(26,46,26,0.08);
+  padding: 48px;
+}
+.form-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.5rem; color: var(--ink); margin-bottom: 8px;
+}
+.form-subtitle {
+  font-size: 0.82rem; color: var(--mid); margin-bottom: 36px; line-height: 1.5;
+}
+.field-group { margin-bottom: 20px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.field-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--mid); margin-bottom: 6px; display: block;
+}
+.field-required { color: var(--pollen); }
+.field-input, .field-select, .field-textarea {
+  width: 100%; padding: 12px 14px;
+  border: 1px solid rgba(26,46,26,0.15);
+  background: var(--cream); color: var(--ink);
+  font-family: 'Inter', sans-serif; font-size: 0.88rem;
+  outline: none; transition: border-color 0.2s, background 0.2s;
+  appearance: none;
+}
+.field-input:focus, .field-select:focus, .field-textarea:focus {
+  border-color: var(--moss); background: white;
+}
+.field-input.error, .field-select.error { border-color: var(--error); }
+.field-error {
+  font-size: 0.68rem; color: var(--error); margin-top: 4px; display: none;
+}
+.field-error.visible { display: block; }
+.field-textarea { resize: vertical; min-height: 90px; }
+
+/* Mapa de seleção */
+.map-field { margin-bottom: 20px; }
+.map-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--mid); margin-bottom: 6px; display: block;
+}
+#selectMap {
+  width: 100%; height: 260px;
+  border: 1px solid rgba(26,46,26,0.15);
+  cursor: crosshair;
+}
+.map-hint {
+  font-size: 0.72rem; color: var(--mid); margin-top: 6px;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: 0.06em;
+}
+.map-selected {
+  font-size: 0.72rem; color: var(--moss); margin-top: 4px;
+  font-family: 'JetBrains Mono', monospace; display: none;
+}
+
+/* Consent */
+.consent-block {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 16px; background: rgba(46,92,50,0.04);
+  border: 1px solid rgba(46,92,50,0.1); margin-bottom: 24px;
+}
+.consent-block input[type="checkbox"] { margin-top: 3px; accent-color: var(--fern); flex-shrink: 0; }
+.consent-text { font-size: 0.78rem; color: var(--mid); line-height: 1.6; }
+
+/* Submit */
+.btn-submit {
+  width: 100%; padding: 16px;
+  background: var(--fern); color: var(--cream);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase;
+  border: none; cursor: pointer; transition: background 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.btn-submit:hover { background: var(--canopy); }
+.btn-submit:disabled { background: var(--light); cursor: not-allowed; }
+.btn-submit .spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white; border-radius: 50%;
+  animation: spin 0.8s linear infinite; display: none;
+}
+.btn-submit.loading .spinner { display: block; }
+.btn-submit.loading .btn-text { opacity: 0.6; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Success state */
+.success-card {
+  display: none; text-align: center; padding: 60px 40px;
+}
+.success-card.visible { display: block; }
+.success-icon { font-size: 3rem; margin-bottom: 20px; }
+.success-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.8rem; color: var(--ink); margin-bottom: 12px;
+}
+.success-desc { font-size: 0.88rem; color: var(--mid); line-height: 1.7; }
+.success-ref {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem; color: var(--moss);
+  background: rgba(46,92,50,0.06); padding: 10px 16px;
+  margin: 20px auto; display: inline-block; letter-spacing: 0.1em;
+}
+
+/* ── FOOTER ── */
+footer {
+  background: var(--deep); padding: 40px 60px;
+  display: flex; justify-content: space-between; align-items: center;
+  border-top: 1px solid rgba(122,171,126,0.08);
+}
+.footer-logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.1rem; color: var(--snow); text-decoration: none;
+}
+.footer-logo span { color: var(--pollen); }
+.footer-copy {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.58rem; color: rgba(184,212,186,0.2);
+  letter-spacing: 0.1em;
+}
+.footer-links { display: flex; gap: 24px; }
+.footer-links a {
+  font-size: 0.78rem; color: rgba(184,212,186,0.35);
+  text-decoration: none; transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--mist); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(100px);
+  background: var(--canopy); color: var(--snow);
+  padding: 14px 24px; font-size: 0.82rem; font-weight: 500;
+  border-left: 3px solid var(--pollen); z-index: 500;
+  transition: transform 0.4s ease; white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.error-toast { border-left-color: var(--error); background: #2a1010; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-map { height: 40vh; }
+  .hero-left { padding: 60px 24px; }
+  .steps { grid-template-columns: 1fr 1fr; }
+  .form-section { grid-template-columns: 1fr; padding: 60px 24px; gap: 40px; }
+  .form-card { padding: 28px 20px; }
+  .field-row { grid-template-columns: 1fr; }
+  nav { padding: 0 20px; }
+  .nav-links { display: none; }
+  .how { padding: 60px 24px; }
+  footer { flex-direction: column; gap: 16px; text-align: center; padding: 32px 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo"><span class="nav-logo-dot">⬡</span> Verdis</a>
+  <ul class="nav-links">
+    <li><a href="#como-funciona">Como funciona</a></li>
+    <li><a href="#registar">Registar parcela</a></li>
+    <li><a href="mailto:info@verdis.pt">Contacto</a></li>
+  </ul>
+  <a href="#registar" class="nav-cta">Registar agora</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow">Plataforma Florestal · Portugal</div>
+    <h1 class="hero-title">
+      A sua floresta<br>já está a sequestrar<br><em>carbono.</em><br>Está a receber?
+    </h1>
+    <p class="hero-desc">
+      A Verdis conecta proprietários florestais portugueses ao mercado voluntário de carbono. Registe a sua parcela — nós tratamos da monitorização, certificação e receita.
+    </p>
+    <div class="hero-stats">
+      <div>
+        <div class="hstat-val">€12–18</div>
+        <div class="hstat-label">por tCO₂e · mercado Verra</div>
+      </div>
+      <div>
+        <div class="hstat-val">5 dias</div>
+        <div class="hstat-label">revisita Sentinel-2</div>
+      </div>
+      <div>
+        <div class="hstat-val">€0</div>
+        <div class="hstat-label">custo inicial</div>
+      </div>
+    </div>
+    <a href="#registar" class="hero-btn">Registar a minha parcela →</a>
+  </div>
+  <div class="hero-map">
+    <div id="heroMap"></div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="como-funciona">
+  <div class="how-inner">
+    <div class="section-eyebrow">Processo</div>
+    <h2 class="section-title">De proprietário a<br><em>gerador de receita</em> — 4 passos.</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-n">01</div>
+        <span class="step-icon">📋</span>
+        <div class="step-title">Regista a parcela</div>
+        <p class="step-desc">Preenche o formulário com os dados BUPi, área, espécie e localização. Gratuito e sem compromisso.</p>
+      </div>
+      <div class="step">
+        <div class="step-n">02</div>
+        <span class="step-icon">🛰️</span>
+        <div class="step-title">Monitorização satélite</div>
+        <p class="step-desc">A Verdis ativa a monitorização Sentinel-2 da parcela — biomassa, NDVI e sequestro calculados automaticamente.</p>
+      </div>
+      <div class="step">
+        <div class="step-n">03</div>
+        <span class="step-icon">◎</span>
+        <div class="step-title">Certificação Verra</div>
+        <p class="step-desc">Agregamos a sua parcela num projeto certificado Verra VCS ou Gold Standard. Os créditos são emitidos em seu nome.</p>
+      </div>
+      <div class="step">
+        <div class="step-n">04</div>
+        <span class="step-icon">💶</span>
+        <div class="step-title">Recebe a receita</div>
+        <p class="step-desc">Os créditos são vendidos no mercado voluntário. Recebe a sua parte diretamente — sem burocracia, sem intermediários.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FORM SECTION -->
+<section id="registar" style="background:var(--cream);padding:100px 60px;">
+  <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1.4fr;gap:80px;">
+
+    <!-- Left intro -->
+    <div style="position:sticky;top:80px;align-self:start;">
+      <div class="section-eyebrow">Registo gratuito</div>
+      <h2 class="section-title" style="color:var(--ink);">Registe a sua<br>parcela <em style="color:var(--pollen)">agora.</em></h2>
+      <div class="form-promise">
+        <div class="promise-item">
+          <div class="promise-icon">🔒</div>
+          <div class="promise-text"><strong>Dados protegidos.</strong> Informação tratada com confidencialidade total. Nunca partilhada sem consentimento.</div>
+        </div>
+        <div class="promise-item">
+          <div class="promise-icon">📞</div>
+          <div class="promise-text"><strong>Contacto em 48h.</strong> A equipa Verdis analisará a sua parcela e contactá-lo-á com uma proposta inicial.</div>
+        </div>
+        <div class="promise-item">
+          <div class="promise-icon">€</div>
+          <div class="promise-text"><strong>Sem custos iniciais.</strong> O registo e análise preliminar são completamente gratuitos.</div>
+        </div>
+        <div class="promise-item">
+          <div class="promise-icon">🌲</div>
+          <div class="promise-text"><strong>Qualquer espécie.</strong> Pinheiro, sobreiro, eucalipto, carvalho, azinheira ou misto — todas elegíveis.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form card -->
+    <div class="form-card" id="formCard">
+      <div class="form-title">Dados da Parcela</div>
+      <p class="form-subtitle">Preencha os campos abaixo. Campos marcados com <span style="color:var(--pollen)">*</span> são obrigatórios.</p>
+
+      <!-- Map selector -->
+      <div class="map-field">
+        <span class="map-label">Localização da Parcela <span class="field-required">*</span></span>
+        <div id="selectMap"></div>
+        <div class="map-hint">Clique no mapa para marcar a localização aproximada da sua parcela</div>
+        <div class="map-selected" id="mapSelected">📍 Localização marcada</div>
+      </div>
+
+      <!-- Nome -->
+      <div class="field-group">
+        <label class="field-label">Nome do Proprietário <span class="field-required">*</span></label>
+        <input class="field-input" type="text" id="fNome" placeholder="Nome completo">
+        <div class="field-error" id="eNome">Campo obrigatório</div>
+      </div>
+
+      <!-- Email + Telefone -->
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">Email <span class="field-required">*</span></label>
+          <input class="field-input" type="email" id="fEmail" placeholder="email@exemplo.pt">
+          <div class="field-error" id="eEmail">Email inválido</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Telefone</label>
+          <input class="field-input" type="tel" id="fTelefone" placeholder="+351 9xx xxx xxx">
+        </div>
+      </div>
+
+      <!-- Nome parcela + Referência BUPi -->
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">Nome da Parcela <span class="field-required">*</span></label>
+          <input class="field-input" type="text" id="fParcela" placeholder="ex: Pinhal do Norte">
+          <div class="field-error" id="eParcela">Campo obrigatório</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Referência BUPi</label>
+          <input class="field-input" type="text" id="fBupi" placeholder="PT-XXX-000-0000">
+        </div>
+      </div>
+
+      <!-- Área + Espécie -->
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">Área estimada (ha) <span class="field-required">*</span></label>
+          <input class="field-input" type="number" id="fArea" placeholder="0" min="1">
+          <div class="field-error" id="eArea">Insira uma área válida (mín. 1 ha)</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Espécie Dominante <span class="field-required">*</span></label>
+          <select class="field-select" id="fEspecie">
+            <option value="">Selecione</option>
+            <option>Pinheiro-bravo</option>
+            <option>Eucalipto</option>
+            <option>Sobreiro</option>
+            <option>Carvalho</option>
+            <option>Azinheira</option>
+            <option>Pinheiro-manso</option>
+            <option>Misto</option>
+            <option>Outra</option>
+          </select>
+          <div class="field-error" id="eEspecie">Selecione uma espécie</div>
+        </div>
+      </div>
+
+      <!-- Concelho + Tipo propriedade -->
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">Concelho <span class="field-required">*</span></label>
+          <input class="field-input" type="text" id="fConcelho" placeholder="ex: Lousã">
+          <div class="field-error" id="eConcelho">Campo obrigatório</div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Tipo de Propriedade</label>
+          <select class="field-select" id="fTipo">
+            <option value="">Selecione</option>
+            <option>Privada</option>
+            <option>Baldio</option>
+            <option>Mista</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Notas -->
+      <div class="field-group">
+        <label class="field-label">Informação adicional</label>
+        <textarea class="field-textarea" id="fNotas" placeholder="Descrição da parcela, condições, histórico de gestão..."></textarea>
+      </div>
+
+      <!-- Consent -->
+      <div class="consent-block">
+        <input type="checkbox" id="fConsent">
+        <label for="fConsent" class="consent-text">
+          Autorizo a Verdis a contactar-me e a processar os dados fornecidos para análise da minha parcela florestal, nos termos do RGPD. Os dados não serão partilhados com terceiros sem o meu consentimento expresso.
+        </label>
+      </div>
+
+      <button class="btn-submit" id="btnSubmit" onclick="submitForm()">
+        <div class="spinner"></div>
+        <span class="btn-text">Submeter Registo</span>
+      </button>
+    </div>
+
+    <!-- Success -->
+    <div class="success-card" id="successCard" style="grid-column:2;background:white;border:1px solid rgba(26,46,26,0.08);">
+      <div class="success-icon">🌲</div>
+      <div class="success-title">Registo recebido!</div>
+      <p class="success-desc">A equipa Verdis irá analisar a sua parcela e entrar em contacto em até 48 horas com uma proposta de monitorização e potencial de créditos de carbono.</p>
+      <div class="success-ref" id="successRef">REF: VERDIS-XXXXXX</div>
+      <p class="success-desc" style="margin-top:12px;font-size:0.78rem;">Guarde esta referência para acompanhar o seu registo.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <a href="#" class="footer-logo">⬡ Verdis<span>.</span></a>
+  <div class="footer-links">
+    <a href="mailto:info@verdis.pt">info@verdis.pt</a>
+    <a href="#">Política de Privacidade</a>
+    <a href="#">verdis.pt</a>
+  </div>
+  <div class="footer-copy">© 2025 Verdis · Lisboa, Portugal</div>
+</footer>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── SUPABASE INIT ──
+const { createClient } = supabase;
+const sb = createClient(
+  'https://gvsfguoduhcqsssmhhxd.supabase.co',
+  'sb_publishable_WEsI-UQCt1vq1c6tPxZO1g_gG1LF_JE'
+);
+
+// ── HERO MAP ──
+const heroMap = L.map('heroMap', { zoomControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, touchZoom: false });
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap © CARTO', maxZoom: 10
+}).addTo(heroMap);
+heroMap.setView([39.5, -8.0], 6);
+
+// Sample parcels on hero map
+const parcels = [
+  { lat: 40.2, lng: -7.8, name: 'Pinhal da Serra', area: 240 },
+  { lat: 39.6, lng: -8.4, name: 'Sobreiral do Tejo', area: 180 },
+  { lat: 38.9, lng: -7.5, name: 'Montado Alentejano', area: 320 },
+  { lat: 41.2, lng: -7.9, name: 'Carvalhal Transmontano', area: 150 },
+  { lat: 40.8, lng: -8.5, name: 'Eucaliptal do Vouga', area: 90 },
+];
+const greenIcon = L.divIcon({
+  className: '', html: '<div style="width:10px;height:10px;border-radius:50%;background:#7aab7e;border:2px solid #c8a84a;box-shadow:0 0 8px rgba(122,171,126,0.6)"></div>',
+  iconSize: [10,10], iconAnchor: [5,5]
+});
+parcels.forEach(p => {
+  L.marker([p.lat, p.lng], { icon: greenIcon })
+   .addTo(heroMap)
+   .bindPopup(`<b>${p.name}</b><br>${p.area} ha`);
+});
+
+// ── SELECTION MAP ──
+const selMap = L.map('selectMap');
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap © CARTO', maxZoom: 18
+}).addTo(selMap);
+selMap.setView([39.5, -8.0], 6);
+
+let selMarker = null;
+let selLat = null, selLng = null;
+
+selMap.on('click', e => {
+  selLat = e.latlng.lat.toFixed(6);
+  selLng = e.latlng.lng.toFixed(6);
+  if (selMarker) selMap.removeLayer(selMarker);
+  const icon = L.divIcon({
+    className: '', html: '<div style="width:14px;height:14px;border-radius:50%;background:#c8a84a;border:3px solid #2e5c32;box-shadow:0 0 10px rgba(200,168,74,0.7)"></div>',
+    iconSize: [14,14], iconAnchor: [7,7]
+  });
+  selMarker = L.marker([selLat, selLng], { icon }).addTo(selMap);
+  document.getElementById('mapSelected').style.display = 'block';
+  document.getElementById('mapSelected').textContent = `📍 ${selLat}°N, ${selLng}°W`;
+});
+
+// ── FORM VALIDATION ──
+function validate() {
+  let ok = true;
+  const checks = [
+    { id: 'fNome', err: 'eNome', test: v => v.trim().length > 2 },
+    { id: 'fEmail', err: 'eEmail', test: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) },
+    { id: 'fParcela', err: 'eParcela', test: v => v.trim().length > 1 },
+    { id: 'fArea', err: 'eArea', test: v => parseFloat(v) >= 1 },
+    { id: 'fEspecie', err: 'eEspecie', test: v => v !== '' },
+    { id: 'fConcelho', err: 'eConcelho', test: v => v.trim().length > 1 },
+  ];
+  checks.forEach(c => {
+    const el = document.getElementById(c.id);
+    const err = document.getElementById(c.err);
+    if (!c.test(el.value)) {
+      el.classList.add('error'); err.classList.add('visible'); ok = false;
+    } else {
+      el.classList.remove('error'); err.classList.remove('visible');
+    }
+  });
+  if (!selLat) { showToast('Marque a localização no mapa', true); ok = false; }
+  if (!document.getElementById('fConsent').checked) { showToast('Aceite os termos para continuar', true); ok = false; }
+  return ok;
+}
+
+// ── SUBMIT ──
+async function submitForm() {
+  if (!validate()) return;
+  const btn = document.getElementById('btnSubmit');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  const ref = 'VERDIS-' + Date.now().toString(36).toUpperCase();
+
+  const payload = {
+    referencia: ref,
+    nome: document.getElementById('fNome').value.trim(),
+    email: document.getElementById('fEmail').value.trim(),
+    telefone: document.getElementById('fTelefone').value.trim() || null,
+    nome_parcela: document.getElementById('fParcela').value.trim(),
+    bupi: document.getElementById('fBupi').value.trim() || null,
+    area_ha: parseFloat(document.getElementById('fArea').value),
+    especie: document.getElementById('fEspecie').value,
+    concelho: document.getElementById('fConcelho').value.trim(),
+    tipo_propriedade: document.getElementById('fTipo').value || null,
+    notas: document.getElementById('fNotas').value.trim() || null,
+    latitude: parseFloat(selLat),
+    longitude: parseFloat(selLng),
+    estado: 'pendente',
+    criado_em: new Date().toISOString()
+  };
+
+  try {
+    const { error } = await sb.from('parcelas').insert([payload]);
+    if (error) throw error;
+
+    // Show success
+    document.getElementById('formCard').style.display = 'none';
+    const sc = document.getElementById('successCard');
+    sc.classList.add('visible');
+    document.getElementById('successRef').textContent = `REF: ${ref}`;
+    sc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showToast('Registo submetido com sucesso!');
+  } catch (err) {
+    console.error(err);
+    // If table doesn't exist yet, show friendly message
+    if (err.message && err.message.includes('relation')) {
+      showToast('Base de dados não configurada ainda — veja instruções abaixo', true);
+      document.getElementById('formCard').style.display = 'none';
+      const sc = document.getElementById('successCard');
+      sc.classList.add('visible');
+      document.getElementById('successRef').textContent = `REF: ${ref} (local)`;
+      sc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      showToast('Erro ao submeter. Tente novamente.', true);
+    }
+  } finally {
+    btn.classList.remove('loading'); btn.disabled = false;
+  }
+}
+
+// ── TOAST ──
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error-toast' : '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// Clear errors on input
+document.querySelectorAll('.field-input, .field-select').forEach(el => {
+  el.addEventListener('input', () => {
+    el.classList.remove('error');
+    const errId = 'e' + el.id.slice(1);
+    const errEl = document.getElementById(errId);
+    if (errEl) errEl.classList.remove('visible');
+  });
+});
+</script>
+</body>
+</html>
